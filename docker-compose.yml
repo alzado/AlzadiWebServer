@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  server:
+    container_name: server
+    restart: always 
+    build: .
+    ports:
+      - "8080:8080"
+    links: 
+      - database
+    volumes:
+      - .:/usr/src/app
+  database:
+    container_name: mongodatabase
+    image: mongo
+    ports:
+      - "27017:27017"
