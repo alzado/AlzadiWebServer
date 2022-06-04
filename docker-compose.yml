@@ -13,7 +13,6 @@ services:
       - .:/usr/src/app
   database:
     container_name: mongodatabase
-    network_mode: host
     image: mongo:latest
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
