@@ -13,12 +13,14 @@ services:
       - .:/usr/src/app
   database:
     container_name: mongodatabase
+    network_mode: host
     image: mongo:latest
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=@Alzadialu.3
-    restart: on-failure
+    restart: always
     ports:
       - "27017:27017"
     volumes:
-      - ./mongodb:/data/db
+      - "$PWD/mongo-entrypoint/:/docker-entrypoint-initdb.d/"
+    command: mongod
