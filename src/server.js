@@ -260,7 +260,7 @@ function updateObjectLocationInDataBase(resolve, reject, objectReceived) {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
         let query = { "public.account": objectReceived.account };
-        let paramsToUpdate = { $set: { "public.xLocation": objectReceived.xLocation, "public.yLocation": objectReceived.yLocation } };
+        let paramsToUpdate = { $set: { "public.xLocation": objectReceived.xLocation, "public.yLocation": objectReceived.yLocation, "public.zLocation": objectReceived.zLocation } };
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
             if (error) {

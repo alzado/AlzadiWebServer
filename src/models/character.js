@@ -4,6 +4,7 @@ class Character {
         this.account = characterObject.account;
         this.xLocation = characterObject.xLocation;
         this.yLocation = characterObject.yLocation;
+        this.zLocation = characterObject.zLocation;
     }
 
     convertToObject = () => {
@@ -13,6 +14,7 @@ class Character {
     updateLocation = (locationObject) => {
         this.xLocation = locationObject.xLocation;
         this.yLocation = locationObject.yLocation;
+        this.zLocation = locationObject.zLocation;
     };
 
     getAccount = () => {
@@ -29,6 +31,7 @@ class NewCharacter {
             account: account,
             xLocation: 0,
             yLocation: 0,
+            zLocation: 0,
         }
     }
 
