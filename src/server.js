@@ -35,12 +35,12 @@ webSocketServer.on('connection', (webSocket) => {
                 console.log("Server connected");
             } else {
                 console.log("Server already running");
-                webSocket.close();
+                // webSocket.close();
             }
         } else {
             if (connectedServer === undefined || connectedServer === null) {
                 broadcastToOneAccount(webSocket, "serverStartError", { message: "Server has no started yet" });
-                webSocket.close();
+                // webSocket.close();
             } else if (objectReceived.topic === "characterLogin") {
                 characterLogin(webSocket, objectReceived.content);
             } else if (objectReceived.topic === "characterMove") {
