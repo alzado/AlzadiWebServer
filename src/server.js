@@ -41,7 +41,8 @@ webSocketServer.on('connection', (webSocket) => {
             if (connectedServer === undefined || connectedServer === null) {
                 broadcastToOneAccount(webSocket, "serverStartError", { message: "Server has no started yet" });
                 webSocket.close();
-            } else if (objectReceived.topic === "characterLogin") {
+            }
+            else if (objectReceived.topic === "characterLogin") {
                 characterLogin(webSocket, objectReceived.content);
             } else if (objectReceived.topic === "characterMove") {
                 characterMove(webSocket, objectReceived.content);
@@ -82,6 +83,11 @@ webSocketServer.on('connection', (webSocket) => {
 // send a message to all the connected clients about how many of them there are every 15 seconds
 setInterval(() => {
     console.log(`Number of connected clients: ${connectedClients.size}`);
+
+    // to prevent server shut down in 300 seconds
+    if (connectedServer !== null && connectedServer !== undefined) {
+        broadcastToOneAccount(connectedServer, "serverCheckSuccess", null);
+    }
     // serverBroadcast({ topic: "general_communication", content: { message: `Number of connected clients: ${clients.size}` } });
 }, 10000);
 
@@ -232,10 +238,10 @@ function checkIfPasswordIsCorrect(resolve, reject, objectToFind) {
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
-                
+
                 let salt = "alzadi";
                 let hash = crypto.pbkdf2Sync(objectToFind.password, salt, 1000, 64, "sha512").toString("hex");
-                
+
                 if (error) {
                     reject(error);
                 } else if (result.private.hash === hash) {
