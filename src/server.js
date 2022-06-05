@@ -85,15 +85,6 @@ setInterval(() => {
     // serverBroadcast({ topic: "general_communication", content: { message: `Number of connected clients: ${clients.size}` } });
 }, 10000);
 
-// function for sending a message to every connected client
-function broadcastToAllClients(objectToSend) {
-    webSocketServer.clients.forEach((value, key, map) => {
-        if (key.readyState === WebSocket.OPEN) {
-            key.send(JSON.stringify(objectToSend));
-        }
-    });
-}
-
 // broadcast to other connected accounts
 function broadcastToOtherConnectedAccounts(webSocket, topic, objectToSend) {
     connectedAccounts.forEach((value, key, map) => {
@@ -404,7 +395,7 @@ async function characterLogout(webSocket) {
         let result = await promise;
 
         // let user know that character is saved, so can proceed to logout
-        broadcastToOneAccount(webSocket, "characterLogoutSuccess", null);
+        broadcastToOneAccount(webSocket, "characterLogoutSuccess", result);
 
         // let others know that character is loged out
         broadcastToOtherConnectedAccounts(webSocket, "proxyLogoutSuccess", objectToUpdate);
