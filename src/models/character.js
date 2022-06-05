@@ -27,8 +27,8 @@ class NewCharacter {
         };
         this.public = {
             account: account,
-            xLocation: 150,
-            yLocation: 150,
+            xLocation: 0,
+            yLocation: 0,
         }
     }
 
