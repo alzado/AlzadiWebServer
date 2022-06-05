@@ -120,7 +120,7 @@ console.log('The server is running and waiting for connections');
 
 // DB FUNCTIONALITY
 
-const dataBaseUrl = "mongodb://mongodatabase"; // define db url
+const dataBaseUrl = "mongodb://root:%40Alzadialu.3@mongodatabase"; // define db url
 const dataBaseName = "alzadiDataBase"; // define db name
 const dataBaseCollection = "characterInfo"; // define db collection
 
