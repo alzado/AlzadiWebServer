@@ -31,7 +31,7 @@ class NewCharacter {
             account: account,
             xLocation: 0,
             yLocation: 0,
-            zLocation: 0,
+            zLocation: 200,
         }
     }
 
