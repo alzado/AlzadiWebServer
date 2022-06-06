@@ -359,6 +359,11 @@ async function characterLogin(webSocket, objectToFind) {
                     // returns location of other connected characters to new connected character
                     broadcastOtherConnectedAccountsInfoToNewConnectedAccount(webSocket, "proxyLoginSuccess");
 
+                    // returns all monsters already spawned
+                    spawnedMonsters.forEach((value, key, map) => {
+                        broadcastToOneAccount(webSocket, "monsterSpawnSuccess", value.convertToObject());
+                    });
+
                     // Important: here Character is created
                     connectedAccounts.set(webSocket, new Character(result));
                     console.log(`${objectToFind.account} logged in`);
