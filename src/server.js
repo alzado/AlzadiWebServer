@@ -482,7 +482,7 @@ async function characterCreate(webSocket, objectReceived) {
 
 function monsterSpawn(objectReceived) {
     // load monster in game
-    spawnedMonsters(objectReceived.monsterName, new Monster(objectReceived));
+    spawnedMonsters.set(objectReceived.monsterName, new Monster(objectReceived));
 
     // tell all connected players a new monster apeared
     broadcastToOtherConnectedAccounts(connectedServer, "monsterSpawnSuccess", objectReceived);
