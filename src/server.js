@@ -5,13 +5,14 @@ const WebSocket = require('ws');
 const { WebSocketServer } = require('ws');
 
 const { Character, NewCharacter } = require('./models/character.js');
-const { resolve } = require('path');
+const { Monster } = require('./models/monster.js');
 
 // SERVER FUNCTIONALITY
 
 let connectedClients = new Map(); // has to be a Map instead of {} due to non-string keys
 let connectedAccounts = new Map(); // keep track of logged clients
 let connectedServer;
+let spawnedMonsters = new Map();
 let webSocketServer = new WebSocketServer({ port: 8080 }); // initiate a new server that listens on port 8080
 // let counterDataReceived = 0; // debuger
 
@@ -50,6 +51,8 @@ webSocketServer.on('connection', (webSocket) => {
                 characterLogout(webSocket);
             } else if (objectReceived.topic === "characterCreate") {
                 characterCreate(webSocket, objectReceived.content);
+            } else if (objectReceived.topic === "monsterSpawn") {
+                monsterSpawn(objectReceived.content);
             }
 
         }
@@ -475,4 +478,14 @@ async function characterCreate(webSocket, objectReceived) {
             }
         }
     }
+}
+
+function monsterSpawn(objectReceived) {
+    // load monster in game
+    spawnedMonsters(objectReceived.monsterName, new Monster(objectReceived));
+
+    // tell all connected players a new monster apeared
+    broadcastToOtherConnectedAccounts(connectedServer, "monsterSpawnSuccess", objectReceived);
+
+    // tell new players that this monster appeared (va en character login)
 }
