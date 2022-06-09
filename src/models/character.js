@@ -2,9 +2,7 @@
 class Character {
     constructor(characterObject) {
         this.account = characterObject.account;
-        this.xLocation = characterObject.xLocation;
-        this.yLocation = characterObject.yLocation;
-        this.zLocation = characterObject.zLocation;
+        this.characterLocation = characterObject.characterLocation;
     }
 
     convertToObject = () => {
@@ -12,9 +10,7 @@ class Character {
     }
 
     updateLocation = (locationObject) => {
-        this.xLocation = locationObject.xLocation;
-        this.yLocation = locationObject.yLocation;
-        this.zLocation = locationObject.zLocation;
+        this.characterLocation = locationObject.characterLocation;
     };
 
     getAccount = () => {
@@ -29,9 +25,11 @@ class NewCharacter {
         };
         this.public = {
             account: account,
-            xLocation: 0,
-            yLocation: 0,
-            zLocation: 100,
+            characterLocation: {
+                x: 0,
+                y: 0,
+                z: 100,
+            },
         }
     }
 

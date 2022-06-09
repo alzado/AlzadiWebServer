@@ -263,7 +263,7 @@ function updateObjectLocationInDataBase(resolve, reject, objectReceived) {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
         let query = { "public.account": objectReceived.account };
-        let paramsToUpdate = { $set: { "public.xLocation": objectReceived.xLocation, "public.yLocation": objectReceived.yLocation, "public.zLocation": objectReceived.zLocation } };
+        let paramsToUpdate = { $set: { "public.characterLocation": objectReceived.characterLocation } };
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
             if (error) {
@@ -492,5 +492,4 @@ function monsterSpawn(objectReceived) {
     // tell all connected players a new monster apeared
     broadcastToOtherConnectedAccounts(connectedServer, "monsterSpawnSuccess", objectReceived);
 
-    // tell new players that this monster appeared (va en character login)
 }

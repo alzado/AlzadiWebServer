@@ -1,9 +1,8 @@
 class Monster {
     constructor(monsterObject) {
         this.monsterName = monsterObject.monsterName;
-        this.xLocation = monsterObject.xLocation;
-        this.yLocation = monsterObject.yLocation;
-        this.zLocation = monsterObject.zLocation;
+        this.characterLocation = monsterObject.characterLocation;
+        this.characterSpritePath = monsterObject.characterSpritePath;
     }
 
     convertToObject = () => {
