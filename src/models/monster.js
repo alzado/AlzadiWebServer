@@ -2,7 +2,7 @@ class Monster {
     constructor(monsterObject) {
         this.monsterName = monsterObject.monsterName;
         this.characterLocation = monsterObject.characterLocation;
-        this.characterSpritePath = monsterObject.characterSpritePath;
+        this.characterSprite = monsterObject.characterSprite;
     }
 
     convertToObject = () => {
