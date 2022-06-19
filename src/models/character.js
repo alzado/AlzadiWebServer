@@ -1,23 +1,3 @@
-
-class Character {
-    constructor(characterObject) {
-        this.account = characterObject.account;
-        this.characterLocation = characterObject.characterLocation;
-    }
-
-    convertToObject = () => {
-        return JSON.parse(JSON.stringify(this));
-    }
-
-    updateLocation = (locationObject) => {
-        this.characterLocation = locationObject.characterLocation;
-    };
-
-    getAccount = () => {
-        return this.account;
-    };
-}
-
 class NewCharacter {
     constructor(account, hash) {
         this.private = {
@@ -28,8 +8,10 @@ class NewCharacter {
             characterLocation: {
                 x: 0,
                 y: 0,
-                z: 100,
+                z: 0,
             },
+            currentExperience: 0,
+            currentHealth: 100,
         }
     }
 
@@ -38,5 +20,4 @@ class NewCharacter {
     }
 }
 
-module.exports.Character = Character;
 module.exports.NewCharacter = NewCharacter;

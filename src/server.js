@@ -4,118 +4,65 @@ const { randomUUID } = require('crypto');
 const WebSocket = require('ws');
 const { WebSocketServer } = require('ws');
 
-const { Character, NewCharacter } = require('./models/character.js');
+const { NewCharacter } = require('./models/character.js');
 const { Monster } = require('./models/monster.js');
 
 // SERVER FUNCTIONALITY
 
-let connectedClients = new Map(); // has to be a Map instead of {} due to non-string keys
-let connectedAccounts = new Map(); // keep track of logged clients
-let connectedServer;
-let spawnedMonsters = new Map();
+let connectedClients = new Map(); // keep track of logged clients
+let connectedAccounts = new Map();
 let webSocketServer = new WebSocketServer({ port: 8080 }); // initiate a new server that listens on port 8080
-// let counterDataReceived = 0; // debuger
 
 // set up event handlers and do other things upon a client connecting to the server
 webSocketServer.on('connection', (webSocket) => {
-    const connectedClientId = randomUUID(); // create an id to track the client
-    connectedClients.set(webSocket, connectedClientId); // assign id to client
-    console.log(`New connection assigned id: ${connectedClientId}`);
+    let connectedClientId = randomUUID();
+    connectedClients.set(webSocket, connectedClientId);
+    console.log(`Client connected with id: ${connectedClientId}`);
 
     // send a message to all connected clients upon receiving a message from one of the connected clients
     webSocket.on('message', (dataReceived) => {
-        // counterDataReceived += 1; // debuger
-        // console.log(counterDataReceived);
         console.log(`Received: ${dataReceived}`);
 
         let objectReceived = JSON.parse(dataReceived); // get JSON object from string
 
-        if (objectReceived.topic === "serverStart") {
-            if (connectedServer === undefined || connectedServer === null) {
-                connectedServer = webSocket; // VOY A TENER QUE GENERAR LAS COMUNICACIONES DEL SERVER
-                console.log("Server connected");
-            } else {
-                console.log("Server already running");
-                webSocket.close();
-            }
-        } else {
-            if (connectedServer === undefined || connectedServer === null) {
-                broadcastToOneAccount(webSocket, "serverStartError", { message: "Server has no started yet" });
-                webSocket.close();
-            }
-            else if (objectReceived.topic === "characterLogin") {
-                characterLogin(webSocket, objectReceived.content);
-            } else if (objectReceived.topic === "characterMove") {
-                characterMove(webSocket, objectReceived.content);
-            } else if (objectReceived.topic === "characterLogout") {
-                characterLogout(webSocket);
-            } else if (objectReceived.topic === "characterCreate") {
-                characterCreate(webSocket, objectReceived.content);
-            } else if (objectReceived.topic === "monsterSpawn") {
-                monsterSpawn(objectReceived.content);
-            }
-
+        if (objectReceived.topic === "characterLogin") {
+            characterLogin(webSocket, objectReceived.content);
+        } else if (objectReceived.topic === "characterMove") {
+            characterMove(webSocket, objectReceived.content);
+        } else if (objectReceived.topic === "characterLogout") {
+            characterLogout(webSocket, objectReceived.content);
+        } else if (objectReceived.topic === "characterCreate") {
+            characterCreate(webSocket, objectReceived.content);
+        } else if (objectReceived.topic === "uploadCharacterInfo") {
+            uploadCharacterInfo(webSocket, objectReceived.content);
         }
     });
 
     // stop tracking the client upon that client closing the connection
     webSocket.on('close', () => {
-        // automatic server logout
-        if (connectedServer === webSocket) {
-            // tell everyone that server was shut down
-            connectedServer = undefined;
-        }
+        console.log(`Client ${connectedClients.get(webSocket)} has disconnected`);
+        connectedClients.delete(webSocket);
 
-        // automatic proxys logout
         if (connectedAccounts.has(webSocket)) {
-            broadcastToOtherConnectedAccounts(webSocket, "proxyLogoutSuccess", { account: connectedAccounts.get(webSocket).getAccount() });
+            console.log(`${connectedAccounts.get(webSocket)} has disconnected`);
             connectedAccounts.delete(webSocket);
         }
-
-        if (connectedClients.has(webSocket)) {
-            console.log(`Connection (id = ${connectedClients.get(webSocket)}) closed`);
-            connectedClients.delete(webSocket);
-        }
     });
 
-
-    // send the id back to the newly connected client
-    // ws.send(JSON.stringify({ topic: "particular_communication", content: { message: `You have been assigned id ${id}` } }));
 });
 
+console.log('Web Server is running and waiting for Game Server to connect');
+
 // send a message to all the connected clients about how many of them there are every 15 seconds
-setInterval(() => {
-    console.log(`Number of connected clients: ${connectedClients.size}`);
+// setInterval(() => {
+// }, 10000);
 
-    // to prevent server shut down in 300 seconds
-    if (connectedServer !== null && connectedServer !== undefined) {
-        broadcastToOneAccount(connectedServer, "serverCheckSuccess", null);
-    }
-    // serverBroadcast({ topic: "general_communication", content: { message: `Number of connected clients: ${clients.size}` } });
-}, 10000);
-
-// broadcast to other connected accounts
-function broadcastToOtherConnectedAccounts(webSocket, topic, objectToSend) {
-    connectedAccounts.forEach((value, key, map) => {
-        if (key.readyState === WebSocket.OPEN && key !== webSocket) {
-            key.send(JSON.stringify({ topic: topic, content: objectToSend }));
-        }
-    });
+function broadcastToGameServer(webSocket, topic, message, objectToSend) {
+    let objetToBroadcast = { topic: topic, message: message, content: objectToSend };
+    console.log(`Sent: ${JSON.stringify(objetToBroadcast)}`);
+    webSocket.send(JSON.stringify(objetToBroadcast));
 }
 
-// broadcast info from connected accounts to new connected account
-function broadcastOtherConnectedAccountsInfoToNewConnectedAccount(webSocket, topic) {
-    connectedAccounts.forEach((value, key, map) => {
-        let objectToSend = { topic: topic, content: value.convertToObject() };
-        webSocket.send(JSON.stringify(objectToSend));
-    });
-}
-
-function broadcastToOneAccount(webSocket, topic, objectToSend) {
-    webSocket.send(JSON.stringify({ topic: topic, content: objectToSend }));
-}
-
-console.log('The server is running and waiting for connections');
 
 
 // DB FUNCTIONALITY
@@ -258,12 +205,12 @@ function checkIfPasswordIsCorrect(resolve, reject, objectToFind) {
 }
 
 // Update object x and y location
-function updateObjectLocationInDataBase(resolve, reject, objectReceived) {
+function updateCharacterInDataBase(resolve, reject, objectReceived) {
     MongoClient.connect(dataBaseUrl, (error, dataBase) => {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
         let query = { "public.account": objectReceived.account };
-        let paramsToUpdate = { $set: { "public.characterLocation": objectReceived.characterLocation } };
+        let paramsToUpdate = { $set: { public: objectReceived } };
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
             if (error) {
@@ -298,8 +245,6 @@ function updateObjectInDataBase(resolve, reject, objectReceived) {
 }
 
 
-// insert_object(alzadidb,character_info,{account: "gugo", is_online: false, x_location: 150, y_location: 150});
-
 // GAME FUNCTIONALITY
 
 // On character login
@@ -310,10 +255,10 @@ async function characterLogin(webSocket, objectToFind) {
         checkIfAccountDoesExistInDataBase(resolve, reject, objectToFind);
     });
     try {
-        let result = await promise;
+        await promise;
         doesAccountExist = true;
     } catch (error) {
-        broadcastToOneAccount(webSocket, "characterLoginError", { message: error })
+        broadcastToGameServer(webSocket, "characterLoginError", error, objectToFind);
     }
 
     if (doesAccountExist) {
@@ -324,10 +269,10 @@ async function characterLogin(webSocket, objectToFind) {
         });
 
         try {
-            let result = await promise;
+            await promise;
             isPasswordCorrect = true;
         } catch (error) {
-            broadcastToOneAccount(webSocket, "characterLoginError", { message: error });
+            broadcastToGameServer(webSocket, "characterLoginError", error, objectToFind);
         }
 
         if (isPasswordCorrect) {
@@ -335,9 +280,9 @@ async function characterLogin(webSocket, objectToFind) {
             //check if account is already loged in
             let isLogedIn = false;
             connectedAccounts.forEach((value, key, map) => {
-                if (objectToFind.account === value.getAccount()) {
+                if (objectToFind.account === value) {
                     isLogedIn = true;
-                    broadcastToOneAccount(webSocket, "characterLoginError", { message: "Account already loged in" });
+                    broadcastToGameServer(webSocket, "characterLoginError", "Account already loged in", objectToFind);
                 }
             });
 
@@ -351,25 +296,14 @@ async function characterLogin(webSocket, objectToFind) {
                     let result = await promise; // waits until new connection data is fetched
 
                     // returns location to new connected character
-                    broadcastToOneAccount(webSocket, "characterLoginSuccess", result);
-
-                    // returns location to other connected characters
-                    broadcastToOtherConnectedAccounts(webSocket, "proxyLoginSuccess", result);
-
-                    // returns location of other connected characters to new connected character
-                    broadcastOtherConnectedAccountsInfoToNewConnectedAccount(webSocket, "proxyLoginSuccess");
-
-                    // returns all monsters already spawned
-                    spawnedMonsters.forEach((value, key, map) => {
-                        broadcastToOneAccount(webSocket, "monsterSpawnSuccess", value.convertToObject());
-                    });
+                    broadcastToGameServer(webSocket, "characterLoginSuccess", null, result);
 
                     // Important: here Character is created
-                    connectedAccounts.set(webSocket, new Character(result));
-                    console.log(`${objectToFind.account} logged in`);
+                    connectedAccounts.set(webSocket, objectToFind.account);
+                    console.log(`${connectedAccounts.get(webSocket)} logged in`);
                 } catch (error) {
                     console.log(error);
-                    broadcastToOneAccount(webSocket, "characterLoginError", { message: error });
+                    broadcastToGameServer(webSocket, "characterLoginError", error, null);
                 }
             }
         }
@@ -377,53 +311,51 @@ async function characterLogin(webSocket, objectToFind) {
 }
 
 // On character move
-async function characterMove(webSocket, objectReceived) {
+async function uploadCharacterInfo(webSocket, objectReceived) {
 
-    connectedAccounts.get(webSocket).updateLocation(objectReceived); // update location of character in memory
-    broadcastToOtherConnectedAccounts(webSocket, "proxyMoveSuccess", objectReceived); // update location of character for other accounts
+    // update account
+    objectReceived.account = connectedAccounts.get(webSocket);
 
     // save location of character in DB
     let promise = new Promise((resolve, reject) => {
-        updateObjectLocationInDataBase(resolve, reject, objectReceived)
+        updateCharacterInDataBase(resolve, reject, objectReceived)
     });
 
     try {
-        let result = await promise;
-        console.log("Player location updated");
+        await promise;
+        broadcastToGameServer(webSocket, "uploadCharacterInfoSuccess", null, null);
+        console.log("Player info updated");
     } catch (error) {
+        broadcastToGameServer(webSocket, "uploadCharacterInfoError", null, null);
         console.log(error);
     }
 }
 
 // On character logout
-async function characterLogout(webSocket) {
+async function characterLogout(webSocket, objectReceived) {
 
-    let objectToUpdate = connectedAccounts.get(webSocket).convertToObject();
+    // let objectToUpdate = s.get(webSocket).convertToObject();
     // save everything before logout
+    objectReceived.account = connectedAccounts.get(webSocket);
+
     let promise = new Promise((resolve, reject) => {
-        updateObjectInDataBase(resolve, reject, objectToUpdate);
+        updateObjectInDataBase(resolve, reject, objectReceived);
     });
 
     try {
         //wait until saved
-        let result = await promise;
-
-        // let user know that character is saved, so can proceed to logout
-        broadcastToOneAccount(webSocket, "characterLogoutSuccess", result);
-
-        // let others know that character is loged out
-        broadcastToOtherConnectedAccounts(webSocket, "proxyLogoutSuccess", objectToUpdate);
+        await promise;
 
         // delete info in memory
         if (connectedAccounts.has(webSocket)) {
             connectedAccounts.delete(webSocket);
         }
 
-        // disconect from server
-        if (connectedClients.has(webSocket)) {
-            connectedClients.delete(webSocket);
-        }
+        // let user know that character is saved, so can proceed to logout
+        broadcastToGameServer(webSocket, "characterLogoutSuccess", null, null);
+        console.log(`${objectReceived.account} successfully logged out`);
     } catch (error) {
+        broadcastToGameServer(webSocket, "characterLogoutError", null, null);
         console.log(error);
     }
 }
@@ -437,10 +369,10 @@ async function characterCreate(webSocket, objectReceived) {
     });
 
     try {
-        let result = await promise;
+        await promise;
     } catch (error) {
         doesAccountExist = true;
-        broadcastToOneAccount(webSocket, "characterCreateError", { message: error });
+        broadcastToGameServer(webSocket, "characterCreateError", error, null);
     }
 
     if (!doesAccountExist) {
@@ -450,7 +382,7 @@ async function characterCreate(webSocket, objectReceived) {
         if (objectReceived.account.length >= 1) {
             doesAccountIsLongEnough = true;
         } else {
-            broadcastToOneAccount(webSocket, "characterCreateError", { message: "Account must be 8 character long" });
+            broadcastToGameServer(webSocket, "characterCreateError", "Account must be 8 character long", null);
         }
 
         if (doesAccountIsLongEnough) {
@@ -460,7 +392,7 @@ async function characterCreate(webSocket, objectReceived) {
             if (objectReceived.password.length >= 1) {
                 doesPasswordIsLongEnough = true;
             } else {
-                broadcastToOneAccount(webSocket, "characterCreateError", { message: "Password must be 8 character long" });
+                broadcastToGameServer(webSocket, "characterCreateError", "Password must be 8 character long", null);
             }
 
             if (doesPasswordIsLongEnough) {
@@ -476,20 +408,11 @@ async function characterCreate(webSocket, objectReceived) {
 
                 try {
                     let result = await promise;
-                    broadcastToOneAccount(webSocket, "characterCreateSuccess", { message: result });
+                    broadcastToGameServer(webSocket, "characterCreateSuccess", result, null);
                 } catch (error) {
-                    broadcastToOneAccount(webSocket, "characterCreateError", { message: error });
+                    broadcastToGameServer(webSocket, "characterCreateError", error, null);
                 }
             }
         }
     }
-}
-
-function monsterSpawn(objectReceived) {
-    // load monster in game
-    spawnedMonsters.set(objectReceived.monsterName, new Monster(objectReceived));
-
-    // tell all connected players a new monster apeared
-    broadcastToOtherConnectedAccounts(connectedServer, "monsterSpawnSuccess", objectReceived);
-
 }
