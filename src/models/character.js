@@ -1,17 +1,12 @@
 class NewCharacter {
-    constructor(account, hash) {
+    constructor(hash, objectReceived) {
         this.private = {
             hash: hash,
         };
         this.public = {
-            account: account,
-            characterLocation: {
-                x: 0,
-                y: 0,
-                z: 0,
-            },
-            currentExperience: 0,
-            currentHealth: 100,
+            info: objectReceived.info,
+            stat: objectReceived.stat,
+            itemData: objectReceived.itemData,
         }
     }
 

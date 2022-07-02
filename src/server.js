@@ -5,7 +5,6 @@ const WebSocket = require('ws');
 const { WebSocketServer } = require('ws');
 
 const { NewCharacter } = require('./models/character.js');
-const { Monster } = require('./models/monster.js');
 
 // SERVER FUNCTIONALITY
 
@@ -106,7 +105,7 @@ function findObjectByAccountInDataBase(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.account": objectToFind.account };
+            let query = { "public.info.account": objectToFind.info.account };
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -132,7 +131,7 @@ function checkIfAccountDoesNotExistInDataBase(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.account": objectToFind.account };
+            let query = { "public.info.account": objectToFind.info.account };
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -158,7 +157,7 @@ function checkIfAccountDoesExistInDataBase(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.account": objectToFind.account };
+            let query = { "public.info.account": objectToFind.info.account };
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -184,13 +183,13 @@ function checkIfPasswordIsCorrect(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.account": objectToFind.account };
+            let query = { "public.info.account": objectToFind.info.account };
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
 
                 let salt = "alzadi";
-                let hash = crypto.pbkdf2Sync(objectToFind.password, salt, 1000, 64, "sha512").toString("hex");
+                let hash = crypto.pbkdf2Sync(objectToFind.info.password, salt, 1000, 64, "sha512").toString("hex");
 
                 if (error) {
                     reject(error);
@@ -209,7 +208,7 @@ function updateCharacterInDataBase(resolve, reject, objectReceived) {
     MongoClient.connect(dataBaseUrl, (error, dataBase) => {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
-        let query = { "public.account": objectReceived.account };
+        let query = { "public.info.account": objectReceived.info.account };
         let paramsToUpdate = { $set: { public: objectReceived } };
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
@@ -229,7 +228,7 @@ function updateObjectInDataBase(resolve, reject, objectReceived) {
     MongoClient.connect(dataBaseUrl, (error, dataBase) => {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
-        let query = { "public.account": objectReceived.account };
+        let query = { "public.info.account": objectReceived.info.account };
         let paramsToUpdate = { $set: { public: objectReceived } };
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
@@ -280,7 +279,7 @@ async function characterLogin(webSocket, objectToFind) {
             //check if account is already loged in
             let isLogedIn = false;
             connectedAccounts.forEach((value, key, map) => {
-                if (objectToFind.account === value) {
+                if (objectToFind.info.account === value) {
                     isLogedIn = true;
                     broadcastToGameServer(webSocket, "characterLoginError", "Account already loged in", objectToFind);
                 }
@@ -299,7 +298,7 @@ async function characterLogin(webSocket, objectToFind) {
                     broadcastToGameServer(webSocket, "characterLoginSuccess", null, result);
 
                     // Important: here Character is created
-                    connectedAccounts.set(webSocket, objectToFind.account);
+                    connectedAccounts.set(webSocket, objectToFind.info.account);
                     console.log(`${connectedAccounts.get(webSocket)} logged in`);
                 } catch (error) {
                     console.log(error);
@@ -314,7 +313,7 @@ async function characterLogin(webSocket, objectToFind) {
 async function uploadCharacterInfo(webSocket, objectReceived) {
 
     // update account
-    objectReceived.account = connectedAccounts.get(webSocket);
+    objectReceived.info.account = connectedAccounts.get(webSocket);
 
     // save location of character in DB
     let promise = new Promise((resolve, reject) => {
@@ -336,7 +335,7 @@ async function characterLogout(webSocket, objectReceived) {
 
     // let objectToUpdate = s.get(webSocket).convertToObject();
     // save everything before logout
-    objectReceived.account = connectedAccounts.get(webSocket);
+    objectReceived.info.account = connectedAccounts.get(webSocket);
 
     let promise = new Promise((resolve, reject) => {
         updateObjectInDataBase(resolve, reject, objectReceived);
@@ -353,7 +352,7 @@ async function characterLogout(webSocket, objectReceived) {
 
         // let user know that character is saved, so can proceed to logout
         broadcastToGameServer(webSocket, "characterLogoutSuccess", null, null);
-        console.log(`${objectReceived.account} successfully logged out`);
+        console.log(`${objectReceived.info.account} successfully logged out`);
     } catch (error) {
         broadcastToGameServer(webSocket, "characterLogoutError", null, null);
         console.log(error);
@@ -379,7 +378,7 @@ async function characterCreate(webSocket, objectReceived) {
 
         // check if account is 8 digit long
         let doesAccountIsLongEnough = false;
-        if (objectReceived.account.length >= 1) {
+        if (objectReceived.info.account.length >= 1) {
             doesAccountIsLongEnough = true;
         } else {
             broadcastToGameServer(webSocket, "characterCreateError", "Account must be 8 character long", null);
@@ -389,7 +388,7 @@ async function characterCreate(webSocket, objectReceived) {
 
             // check if password is 8 digit long
             let doesPasswordIsLongEnough = false;
-            if (objectReceived.password.length >= 1) {
+            if (objectReceived.info.password.length >= 1) {
                 doesPasswordIsLongEnough = true;
             } else {
                 broadcastToGameServer(webSocket, "characterCreateError", "Password must be 8 character long", null);
@@ -398,9 +397,9 @@ async function characterCreate(webSocket, objectReceived) {
             if (doesPasswordIsLongEnough) {
                 // create character, hash password and give location
                 let salt = "alzadi";
-                let hash = crypto.pbkdf2Sync(objectReceived.password, salt, 1000, 64, "sha512").toString("hex");
+                let hash = crypto.pbkdf2Sync(objectReceived.info.password, salt, 1000, 64, "sha512").toString("hex");
 
-                let objectToInsert = new NewCharacter(objectReceived.account, hash).convertToObject();
+                let objectToInsert = new NewCharacter(hash, objectReceived).convertToObject();
 
                 let promise = new Promise((resolve, reject) => {
                     createNewCharacterInDataBase(resolve, reject, objectToInsert);
