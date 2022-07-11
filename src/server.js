@@ -1,16 +1,16 @@
-const { MongoClient } = require('mongodb');
+const {MongoClient} = require('mongodb');
 const crypto = require('crypto');
-const { randomUUID } = require('crypto');
-const WebSocket = require('ws');
-const { WebSocketServer } = require('ws');
+const {randomUUID} = require('crypto');
+// const WebSocket = require('ws');
+const {WebSocketServer} = require('ws');
 
-const { NewCharacter } = require('./models/character.js');
+const {NewCharacter} = require('./models/character.js');
 
 // SERVER FUNCTIONALITY
 
 let connectedClients = new Map(); // keep track of logged clients
 let connectedAccounts = new Map();
-let webSocketServer = new WebSocketServer({ port: 8080 }); // initiate a new server that listens on port 8080
+let webSocketServer = new WebSocketServer({port: 8080}); // initiate a new server that listens on port 8080
 
 // set up event handlers and do other things upon a client connecting to the server
 webSocketServer.on('connection', (webSocket) => {
@@ -57,11 +57,10 @@ console.log('Web Server is running and waiting for Game Server to connect');
 // }, 10000);
 
 function broadcastToGameServer(webSocket, topic, message, objectToSend) {
-    let objetToBroadcast = { topic: topic, message: message, content: objectToSend };
+    let objetToBroadcast = {topic: topic, message: message, content: objectToSend};
     console.log(`Sent: ${JSON.stringify(objetToBroadcast)}`);
     webSocket.send(JSON.stringify(objetToBroadcast));
 }
-
 
 
 // DB FUNCTIONALITY
@@ -105,7 +104,7 @@ function findObjectByAccountInDataBase(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.info.account": objectToFind.info.account };
+            let query = {"public.info.account": objectToFind.info.account};
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -131,7 +130,7 @@ function checkIfAccountDoesNotExistInDataBase(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.info.account": objectToFind.info.account };
+            let query = {"public.info.account": objectToFind.info.account};
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -157,7 +156,7 @@ function checkIfAccountDoesExistInDataBase(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.info.account": objectToFind.info.account };
+            let query = {"public.info.account": objectToFind.info.account};
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -183,7 +182,7 @@ function checkIfPasswordIsCorrect(resolve, reject, objectToFind) {
         } else {
 
             let dataBaseObject = dataBase.db(dataBaseName);
-            let query = { "public.info.account": objectToFind.info.account };
+            let query = {"public.info.account": objectToFind.info.account};
 
             dataBaseObject.collection(dataBaseCollection).findOne(query, (error, result) => {
                 dataBase.close();
@@ -208,8 +207,8 @@ function updateCharacterInDataBase(resolve, reject, objectReceived) {
     MongoClient.connect(dataBaseUrl, (error, dataBase) => {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
-        let query = { "public.info.account": objectReceived.info.account };
-        let paramsToUpdate = { $set: { public: objectReceived } };
+        let query = {"public.info.account": objectReceived.info.account};
+        let paramsToUpdate = {$set: {public: objectReceived}};
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
             if (error) {
@@ -218,6 +217,7 @@ function updateCharacterInDataBase(resolve, reject, objectReceived) {
                 reject("Account does not exist");
             } else {
                 resolve(result.public);
+                console.log(result.public);
             }
         });
     });
@@ -228,8 +228,8 @@ function updateObjectInDataBase(resolve, reject, objectReceived) {
     MongoClient.connect(dataBaseUrl, (error, dataBase) => {
         if (error) reject(error);
         let dataBaseObject = dataBase.db(dataBaseName);
-        let query = { "public.info.account": objectReceived.info.account };
-        let paramsToUpdate = { $set: { public: objectReceived } };
+        let query = {"public.info.account": objectReceived.info.account};
+        let paramsToUpdate = {$set: {public: objectReceived}};
         dataBaseObject.collection(dataBaseCollection).updateOne(query, paramsToUpdate, (error, result) => {
             dataBase.close();
             if (error) {
@@ -278,7 +278,7 @@ async function characterLogin(webSocket, objectToFind) {
 
             //check if account is already loged in
             let isLogedIn = false;
-            connectedAccounts.forEach((value, key, map) => {
+            connectedAccounts.forEach((value) => {
                 if (objectToFind.info.account === value) {
                     isLogedIn = true;
                     broadcastToGameServer(webSocket, "characterLoginError", "Account already loged in", objectToFind);
